@@ -36,9 +36,8 @@ RUN apk add --no-cache \
     libxrandr \
     libxi \
     libxtst \
-    libnss3 \
-    libatk-bridge2.0-0 \
-    libgtk-3-0
+    at-spi2-core \
+    gtk+3.0
 
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 ENV PUPPETEER_SKIP_DOWNLOAD=true
