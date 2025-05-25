@@ -2,7 +2,7 @@ const express = require("express");
 const app = express();
 app.use(express.json());
 
-async function loadAndSplitWeb({ chatbotId, knowledgebaseId, url }) {
+async function loadAndSplitWeb({ url }) {
   const { connect } = require("puppeteer-real-browser");
 
   try {
@@ -47,9 +47,9 @@ async function loadAndSplitWeb({ chatbotId, knowledgebaseId, url }) {
 
         const cleanText = (str) =>
           str
-            .replace(/\t+/g, " ") // replace tabs with space
-            .replace(/\n+/g, "\n") // collapse multiple newlines
-            .replace(/ +/g, " ") // collapse multiple spaces
+            .replace(/\t+/g, " ")
+            .replace(/\n+/g, "\n")
+            .replace(/ +/g, " ")
             .trim();
 
         headings.forEach((heading) => {
@@ -78,53 +78,37 @@ async function loadAndSplitWeb({ chatbotId, knowledgebaseId, url }) {
 
     await browser.close();
 
-    const cleanedContent = pageContent.trim();
-
-    return [
-      {
-        pageContent: cleanedContent,
-        metadata: {
-          sourceType: "web",
-          url,
-          chatbotId,
-          knowledgebaseId,
-          processingTimestamp: new Date().toISOString(),
-          contentLength: cleanedContent.length,
-          success: cleanedContent.length > 0,
-        },
-      },
-    ];
+    return {
+      pageContent: pageContent.trim(),
+      contentLength: pageContent.length,
+      success: pageContent.length > 0,
+      timestamp: new Date().toISOString(),
+      url,
+    };
   } catch (error) {
     console.error(`Error scraping ${url}:`, error);
-    return [
-      {
-        pageContent: "",
-        metadata: {
-          sourceType: "web",
-          url,
-          chatbotId,
-          knowledgebaseId,
-          processingTimestamp: new Date().toISOString(),
-          contentLength: 0,
-          success: false,
-          error: error.message,
-        },
-      },
-    ];
+    return {
+      pageContent: "",
+      contentLength: 0,
+      success: false,
+      error: error.message,
+      timestamp: new Date().toISOString(),
+      url,
+    };
   }
 }
 
 app.post("/scrape", async (req, res) => {
-  const { url, chatbotId, knowledgebaseId } = req.body;
+  const { url } = req.body;
 
-  if (!url || !chatbotId || !knowledgebaseId) {
+  if (!url) {
     return res.status(400).json({
-      error: "Missing required fields: url, chatbotId, knowledgebaseId",
+      error: "Missing required field: url",
     });
   }
 
-  const documents = await loadAndSplitWeb({ url, chatbotId, knowledgebaseId });
-  res.json(documents);
+  const result = await loadAndSplitWeb({ url });
+  res.json(result);
 });
 
 const PORT = process.env.PORT || 4000;
